@@ -1,0 +1,9 @@
+# .gitignore
+node_modules/
+.env
+dr-chattermate.db
+dr-chattermate.db-journal
+dr-chattermate.db-wal
+dr-chattermate.db-shm
+.DS_Store
+*.log

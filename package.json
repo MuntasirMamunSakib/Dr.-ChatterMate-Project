@@ -1,0 +1,13 @@
+{
+  "name": "dr-chattermate",
+  "version": "1.0.0",
+  "description": "Dr. ChatterMate — hospital management with AI report assistant",
+  "private": true,
+  "scripts": {
+    "start": "node --env-file=.env server.js",
+    "start:noenv": "node server.js",
+    "reset-db": "node --env-file=.env scripts/reset-db.js"
+  },
+  "engines": { "node": ">=22.5.0" },
+  "dependencies": {}
+}
