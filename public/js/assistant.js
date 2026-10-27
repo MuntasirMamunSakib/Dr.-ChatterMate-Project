@@ -57,13 +57,13 @@ App.register('assistant', async (view) => {
     btn.disabled = true;
     const pending = append('ai', '', true);
     try {
-      const r = await App.api('/api/ai/report-chat', {
-        method: 'POST',
-        body: { question }
-      });
+      const body = { question };
+      const key = App.getAiApiKey();
+      if (key) body.apiKey = key;
+      const r = await App.api('/api/ai/report-chat', { method: 'POST', body });
       pending.remove();
       if (!r.configured) {
-        append('sys', r.message || 'ChatterMate is not configured on the server.');
+        append('sys', r.message || 'ChatterMate is not configured. Add your API key in Settings.');
       } else if (!r.answer) {
         append('sys', r.message || 'No answer available right now.');
       } else {

@@ -124,11 +124,24 @@ window.App = (function () {
     checkAI();
   }
 
+  const AI_KEY_STORAGE = 'dr_chattermate_api_key';
+  const getAiApiKey = () => {
+    try { return (localStorage.getItem(AI_KEY_STORAGE) || '').trim(); }
+    catch { return ''; }
+  };
+  const setAiApiKey = (key) => {
+    const v = String(key || '').trim();
+    if (v) localStorage.setItem(AI_KEY_STORAGE, v);
+    else localStorage.removeItem(AI_KEY_STORAGE);
+  };
+  const clearAiApiKey = () => localStorage.removeItem(AI_KEY_STORAGE);
+
   async function checkAI() {
     try {
-      const r = await api('/api/ai/report-chat', {
-        method: 'POST', body: { question: 'ping', from: '1970-01-01', to: '1970-01-01' }
-      });
+      const body = { question: 'ping' };
+      const key = getAiApiKey();
+      if (key) body.apiKey = key;
+      const r = await api('/api/ai/report-chat', { method: 'POST', body });
       const el = document.getElementById('aiStatus');
       if (r.configured) { el.className = 'pill pill-ok'; el.textContent = 'AI: ready'; }
       else { el.className = 'pill pill-warn'; el.textContent = 'AI: not configured'; }
@@ -140,6 +153,7 @@ window.App = (function () {
 
   return {
     start, go, register, api, toast, openModal, closeModal,
-    fmtMoney, fmtDate, fmtDay, todayISO, escape
+    fmtMoney, fmtDate, fmtDay, todayISO, escape,
+    getAiApiKey, setAiApiKey, clearAiApiKey, checkAI
   };
 })();

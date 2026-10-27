@@ -1,9 +1,36 @@
 // public/js/settings.js
 (function () {
 App.register('settings', async (view) => {
+  const savedKey = App.getAiApiKey();
+  const hasKey = !!savedKey;
   view.innerHTML = `
     <div class="page-head"><div><h1>Settings</h1>
-      <div class="page-sub">Application info and demo data controls</div></div></div>
+      <div class="page-sub">Application info, AI key, and demo data controls</div></div></div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3 class="section-title">AI Report Assistant</h3>
+      <p class="page-sub" style="margin-bottom:12px">
+        Paste a ChatterMate API key to try the assistant without a <b>.env</b> file.
+        The key is stored only in this browser (localStorage) and is sent with AI requests.
+      </p>
+      <form id="aiKeyForm" class="form">
+        <label>ChatterMate API key
+          <input id="apiKeyInp" name="apiKey" type="password" autocomplete="off"
+            placeholder="${hasKey ? '••••••••  (key saved in this browser)' : 'cm_… or your ChatterMate API key'}"
+            value=""/>
+        </label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+          <button type="submit" class="btn btn-primary" id="saveKeyBtn">Save key</button>
+          <button type="button" class="btn btn-ghost" id="clearKeyBtn" ${hasKey ? '' : 'disabled'}>Clear saved key</button>
+        </div>
+        <p class="feed-meta" id="keyStatus" style="margin-top:10px">
+          ${hasKey
+            ? 'A key is saved in this browser. The assistant will use it.'
+            : 'No browser key saved. The server .env key will be used if one exists.'}
+        </p>
+      </form>
+    </div>
+
     <div class="grid-2">
       <div class="card">
         <h3 class="section-title">Application</h3>
@@ -12,7 +39,7 @@ App.register('settings', async (view) => {
           <dt>Version</dt><dd>1.0.0</dd>
           <dt>Database</dt><dd>SQLite · dr-chattermate.db</dd>
           <dt>Server</dt><dd>Node.js http (no framework)</dd>
-          <dt>AI</dt><dd>ChatterMate API (server-side only)</dd>
+          <dt>AI</dt><dd>ChatterMate API</dd>
         </dl>
       </div>
       <div class="card">
@@ -34,12 +61,44 @@ App.register('settings', async (view) => {
     <div class="card" style="margin-top:16px">
       <h3 class="section-title">Security notes</h3>
       <ul style="margin:0;padding-left:18px;color:var(--muted);font-size:13px;line-height:1.7">
-        <li>The ChatterMate API key is stored in <b>.env</b> and never sent to the browser.</li>
-        <li>Payments are <b>simulated</b> — no real card, bank, or bKash service is ever contacted.</li>
+        <li>Optional server key: <b>CHATTERMATE_API_KEY</b> in <b>.env</b> (never commit this file).</li>
+        <li>Optional browser key: saved in localStorage via Settings (for judges / local demos).</li>
+        <li>Payments are recorded in-app — no real card, bank, or bKash service is contacted.</li>
         <li>All seeded patient data is <b>fictional</b>.</li>
         <li>The AI assistant cannot execute SQL and only sees pre-computed report summaries.</li>
       </ul>
     </div>`;
+
+  const form = view.querySelector('#aiKeyForm');
+  const inp = view.querySelector('#apiKeyInp');
+  const clearBtn = view.querySelector('#clearKeyBtn');
+  const status = view.querySelector('#keyStatus');
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const key = inp.value.trim();
+    if (!key) {
+      App.toast('Paste an API key first, or use Clear to remove the saved one', 'err');
+      return;
+    }
+    App.setAiApiKey(key);
+    inp.value = '';
+    inp.placeholder = '••••••••  (key saved in this browser)';
+    clearBtn.disabled = false;
+    status.textContent = 'A key is saved in this browser. The assistant will use it.';
+    App.toast('API key saved in this browser', 'ok');
+    App.checkAI();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    App.clearAiApiKey();
+    inp.value = '';
+    inp.placeholder = 'cm_… or your ChatterMate API key';
+    clearBtn.disabled = true;
+    status.textContent = 'No browser key saved. The server .env key will be used if one exists.';
+    App.toast('Saved API key cleared', 'ok');
+    App.checkAI();
+  });
 
   function confirmAction({ title, blurb, endpoint, successMsg }) {
     App.openModal(title, `
@@ -53,12 +112,12 @@ App.register('settings', async (view) => {
           <button type="submit" class="btn btn-danger" id="confirmBtn">Confirm</button>
         </div>
       </form>`);
-    const form = document.getElementById('confirmForm');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = form.querySelector('#confirmBtn');
+    const confirmForm = document.getElementById('confirmForm');
+    confirmForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const btn = confirmForm.querySelector('#confirmBtn');
       btn.disabled = true;
-      const confirm = new FormData(form).get('confirm');
+      const confirm = new FormData(confirmForm).get('confirm');
       try {
         await App.api(endpoint, { method: 'POST', body: { confirm } });
         App.closeModal();

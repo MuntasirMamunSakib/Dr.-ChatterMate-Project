@@ -485,13 +485,16 @@ route('POST', '/api/ai/report-chat', async ({ body }) => {
   if (!question) throw new Error('Question is required');
   if (question.length > 1000) throw new Error('Question is too long');
 
-  const apiKey = process.env.CHATTERMATE_API_KEY;
+  // Prefer a key pasted in Settings (per-browser); fall back to server .env / host env.
+  const fromClient = String(body.apiKey || '').trim();
+  const fromEnv = String(process.env.CHATTERMATE_API_KEY || '').trim();
+  const apiKey = fromClient || fromEnv;
   if (!apiKey || apiKey.includes('your-chattermate')) {
     return {
       configured: false,
       answer: null,
-      message: 'The ChatterMate API key is not configured on the server. '
-             + 'Set CHATTERMATE_API_KEY in .env and restart to enable the assistant.'
+      message: 'No ChatterMate API key found. Open Settings → AI Report Assistant, '
+             + 'paste your API key, and save — or set CHATTERMATE_API_KEY in .env and restart.'
     };
   }
 
@@ -606,7 +609,7 @@ const server = http.createServer(async (req, res) => {
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`\nPort ${PORT} is already in use. Set PORT in .env to another value and retry.\n`);
+    console.error(`\nPort ${PORT} is already in use. Set PORT=… in the environment (or free the port) and retry.\n`);
     process.exit(1);
   }
   throw err;
@@ -617,5 +620,5 @@ server.listen(PORT, () => {
     && !process.env.CHATTERMATE_API_KEY.includes('your-chattermate');
   console.log(`\n  Dr. ChatterMate running on http://localhost:${PORT}`);
   console.log(`  Database: dr-chattermate.db`);
-  console.log(`  ChatterMate API: ${configured ? 'configured ✓' : 'NOT configured (set CHATTERMATE_API_KEY in .env)'}\n`);
+  console.log(`  Server API key: ${configured ? 'configured ✓' : 'none (use Settings → paste a key, or set CHATTERMATE_API_KEY)'}\n`);
 });
